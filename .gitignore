@@ -53,4 +53,22 @@ logs/
 ### System Files ###
 .DS_Store
 Thumbs.db
-deploy/docker/dockerdata/
+
+### Docker Runtime Files ###
+# 数据目录
+deploy/docker/mysql/data/
+deploy/docker/redis/data/
+deploy/docker/elasticsearch/data/
+deploy/docker/rocketmq/*/store/
+
+# 日志目录
+deploy/docker/nacos/logs/
+deploy/docker/mysql/logs/
+deploy/docker/elasticsearch/logs/
+deploy/docker/rocketmq/*/logs/
+
+# 保留所有配置文件
+!deploy/docker/*/conf/
+!deploy/docker/*/config/
+!deploy/docker/*/prometheus.yml
+!deploy/docker/*/broker.conf
