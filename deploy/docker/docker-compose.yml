@@ -120,6 +120,53 @@ services:
       - "3000:3000"
     restart: always
 
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.45.0
+    container_name: redis-exporter
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+      - REDIS_PASSWORD=redis123
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis
+    restart: always
+
+  mysql-exporter:
+    image: prom/mysqld-exporter:v0.14.0
+    container_name: mysql-exporter
+    environment:
+      - DATA_SOURCE_NAME=root:root123@(mysql:3306)/
+    ports:
+      - "9104:9104"
+    depends_on:
+      - mysql
+    restart: always
+
+  skywalking-oap:
+    image: apache/skywalking-oap-server:9.4.0
+    container_name: skywalking-oap
+    environment:
+      - SW_STORAGE=elasticsearch
+      - SW_STORAGE_ES_CLUSTER_NODES=elasticsearch:9200
+    ports:
+      - "11800:11800"
+      - "12800:12800"
+    depends_on:
+      - elasticsearch
+    restart: always
+
+  skywalking-ui:
+    image: apache/skywalking-ui:9.4.0
+    container_name: skywalking-ui
+    environment:
+      - SW_OAP_ADDRESS=http://skywalking-oap:12800
+    ports:
+      - "8080:8080"
+    depends_on:
+      - skywalking-oap
+    restart: always
+
 networks:
   default:
     driver: bridge
