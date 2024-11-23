@@ -13,7 +13,8 @@
         <module>common-core</module>
         <module>common-redis</module>
         <module>common-log</module>
-        <module>common-security</module>
+        <!-- <module>common-security</module> -->
+        <module>common-database</module>
     </modules>
 
     <artifactId>common</artifactId>
