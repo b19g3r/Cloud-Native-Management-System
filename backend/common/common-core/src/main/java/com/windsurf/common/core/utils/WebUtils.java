@@ -1,8 +1,7 @@
 package com.windsurf.common.core.utils;
 
-import cn.hutool.core.convert.Convert;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.http.HttpStatus;
+import org.springframework.http.HttpStatus;
+import org.springframework.util.StringUtils;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -54,35 +53,36 @@ public class WebUtils {
      * 获取String参数
      */
     public static String getParameter(String name, String defaultValue) {
-        return Convert.toStr(getRequest().getParameter(name), defaultValue);
+        String value = getRequest().getParameter(name);
+        return value != null ? value : defaultValue;
     }
 
     /**
      * 获取Integer参数
      */
     public static Integer getParameterToInt(String name) {
-        return Convert.toInt(getRequest().getParameter(name));
+        return parseInteger(getRequest().getParameter(name), null);
     }
 
     /**
      * 获取Integer参数
      */
     public static Integer getParameterToInt(String name, Integer defaultValue) {
-        return Convert.toInt(getRequest().getParameter(name), defaultValue);
+        return parseInteger(getRequest().getParameter(name), defaultValue);
     }
 
     /**
      * 获取Boolean参数
      */
     public static Boolean getParameterToBool(String name) {
-        return Convert.toBool(getRequest().getParameter(name));
+        return parseBoolean(getRequest().getParameter(name), null);
     }
 
     /**
      * 获取Boolean参数
      */
     public static Boolean getParameterToBool(String name, Boolean defaultValue) {
-        return Convert.toBool(getRequest().getParameter(name), defaultValue);
+        return parseBoolean(getRequest().getParameter(name), defaultValue);
     }
 
     /**
@@ -90,7 +90,7 @@ public class WebUtils {
      */
     public static Long getUserId() {
         String userId = getRequest().getHeader("X-User-Id");
-        return Convert.toLong(userId);
+        return parseLong(userId, null);
     }
 
     /**
@@ -113,11 +113,11 @@ public class WebUtils {
     public static String getIpAddr() {
         HttpServletRequest request = getRequest();
         String ip = request.getHeader("X-Real-IP");
-        if (StrUtil.isNotEmpty(ip) && !"unknown".equalsIgnoreCase(ip)) {
+        if (StringUtils.hasText(ip) && !"unknown".equalsIgnoreCase(ip)) {
             return ip;
         }
         ip = request.getHeader("X-Forwarded-For");
-        if (StrUtil.isNotEmpty(ip) && !"unknown".equalsIgnoreCase(ip)) {
+        if (StringUtils.hasText(ip) && !"unknown".equalsIgnoreCase(ip)) {
             // 多次反向代理后会有多个IP值，第一个为真实IP
             int index = ip.indexOf(',');
             if (index != -1) {
@@ -134,12 +134,64 @@ public class WebUtils {
      */
     public static void renderString(HttpServletResponse response, String string) {
         try {
-            response.setStatus(HttpStatus.HTTP_OK);
+            response.setStatus(HttpStatus.OK.value());
             response.setContentType("application/json");
             response.setCharacterEncoding(StandardCharsets.UTF_8.name());
             response.getWriter().print(string);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * 是否是Ajax异步请求
+     */
+    public static boolean isAjaxRequest(HttpServletRequest request) {
+        String accept = request.getHeader("accept");
+        if (accept != null && accept.contains("application/json")) {
+            return true;
+        }
+
+        String xRequestedWith = request.getHeader("X-Requested-With");
+        if (xRequestedWith != null && xRequestedWith.contains("XMLHttpRequest")) {
+            return true;
+        }
+
+        String uri = request.getRequestURI();
+        if (StringUtils.hasText(uri) && uri.endsWith(".json")) {
+            return true;
+        }
+
+        String ajax = request.getParameter("__ajax");
+        return StringUtils.hasText(ajax);
+    }
+
+    private static Integer parseInteger(String str, Integer defaultValue) {
+        if (str == null) {
+            return defaultValue;
+        }
+        try {
+            return Integer.parseInt(str);
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
+    private static Long parseLong(String str, Long defaultValue) {
+        if (str == null) {
+            return defaultValue;
+        }
+        try {
+            return Long.parseLong(str);
+        } catch (NumberFormatException e) {
+            return defaultValue;
+        }
+    }
+
+    private static Boolean parseBoolean(String str, Boolean defaultValue) {
+        if (str == null) {
+            return defaultValue;
+        }
+        return Boolean.parseBoolean(str);
     }
 }
