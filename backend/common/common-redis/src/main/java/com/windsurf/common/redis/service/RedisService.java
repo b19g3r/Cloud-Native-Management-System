@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Redis服务
@@ -137,7 +138,12 @@ public class RedisService {
      * @return map对象
      */
     public <T> Map<String, T> getCacheMap(final String key) {
-        return (Map<String, T>) redisTemplate.opsForHash().entries(key);
+        Map<Object, Object> entries = redisTemplate.opsForHash().entries(key);
+        return entries.entrySet().stream()
+                .collect(Collectors.toMap(
+                        entry -> entry.getKey().toString(),
+                        entry -> (T) entry.getValue()
+                ));
     }
 
     /**
