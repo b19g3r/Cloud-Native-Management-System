@@ -24,7 +24,7 @@
         <spring-boot.version>2.7.15</spring-boot.version>
         <spring-cloud.version>2021.0.8</spring-cloud.version>
         <spring-cloud-alibaba.version>2021.0.5.0</spring-cloud-alibaba.version>
-        <mybatis-plus.version>3.5.3.1</mybatis-plus.version>
+        <mybatis-plus.version>3.5.7</mybatis-plus.version>
         <mysql.version>8.0.33</mysql.version>
         <druid.version>1.2.18</druid.version>
         <knife4j.version>4.1.0</knife4j.version>
