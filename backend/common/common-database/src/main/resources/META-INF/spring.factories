@@ -1,2 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-com.windsurf.common.database.config.DatabaseAutoConfiguration
