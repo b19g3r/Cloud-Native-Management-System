@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
@@ -22,39 +23,28 @@ public class FallbackHandler {
 
     private final ObjectMapper objectMapper;
 
-    public Mono<ServerResponse> handleFallback(ServerRequest request) {
-        String path = request.path();
-        String serviceId = extractServiceId(path);
-        
-        log.warn("Service {} is unavailable, path: {}", serviceId, path);
-        
+    public Mono<ServerResponse> handleAuthFallback(ServerRequest request) {
+        return createFallbackResponse("Auth service is not available");
+    }
+
+    public Mono<ServerResponse> handleSystemFallback(ServerRequest request) {
+        return createFallbackResponse("System service is not available");
+    }
+
+    private Mono<ServerResponse> createFallbackResponse(String message) {
         return ServerResponse
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Mono.just(createFallbackResponse(serviceId)), DataBuffer.class);
-    }
-
-    private String extractServiceId(String path) {
-        // 从路径中提取服务ID，例如 /auth/** -> auth-service
-        String[] parts = path.split("/");
-        if (parts.length > 1) {
-            return parts[1] + "-service";
-        }
-        return "unknown-service";
-    }
-
-    private DataBuffer createFallbackResponse(String serviceId) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("code", HttpStatus.SERVICE_UNAVAILABLE.value());
-        response.put("message", String.format("Service %s is temporarily unavailable", serviceId));
-        response.put("path", serviceId);
-        
-        try {
-            String json = objectMapper.writeValueAsString(response);
-            return objectMapper.getFactory().createParser(json).getInputSource();
-        } catch (JsonProcessingException e) {
-            log.error("Error creating fallback response", e);
-            return null;
-        }
+                .body(Mono.fromCallable(() -> {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("code", HttpStatus.SERVICE_UNAVAILABLE.value());
+                    response.put("message", message);
+                    try {
+                        return objectMapper.writeValueAsBytes(response);
+                    } catch (JsonProcessingException e) {
+                        log.error("Error writing fallback response", e);
+                        return new byte[0];
+                    }
+                }), byte[].class);
     }
 }

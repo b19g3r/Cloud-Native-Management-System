@@ -70,7 +70,7 @@ class EncryptionFilterTest {
     void filter_ValidRequest_ProcessesEncryption() {
         when(request.getPath()).thenReturn(() -> "/api/protected");
         when(securityProperties.getIgnore()).thenReturn(new SecurityProperties.IgnoreProperties());
-        
+
         // 创建测试请求数据
         DataBuffer buffer = new DefaultDataBufferFactory().wrap(TEST_CONTENT.getBytes(StandardCharsets.UTF_8));
         when(request.getBody()).thenReturn(Flux.just(buffer));
@@ -86,7 +86,7 @@ class EncryptionFilterTest {
     void filter_ErrorInEncryption_HandlesGracefully() {
         when(request.getPath()).thenReturn(() -> "/api/protected");
         when(securityProperties.getIgnore()).thenReturn(new SecurityProperties.IgnoreProperties());
-        
+
         // 创建无效的请求数据
         DataBuffer buffer = new DefaultDataBufferFactory().wrap("invalid data".getBytes(StandardCharsets.UTF_8));
         when(request.getBody()).thenReturn(Flux.just(buffer));
@@ -113,13 +113,13 @@ class EncryptionFilterTest {
     void filter_LargePayload_HandlesCorrectly() {
         when(request.getPath()).thenReturn(() -> "/api/protected");
         when(securityProperties.getIgnore()).thenReturn(new SecurityProperties.IgnoreProperties());
-        
+
         // Create a large test payload
         StringBuilder largeContent = new StringBuilder();
         for (int i = 0; i < 1000; i++) {
             largeContent.append(TEST_CONTENT);
         }
-        
+
         DataBuffer buffer = new DefaultDataBufferFactory().wrap(largeContent.toString().getBytes(StandardCharsets.UTF_8));
         when(request.getBody()).thenReturn(Flux.just(buffer));
         when(response.bufferFactory()).thenReturn(new DefaultDataBufferFactory());
@@ -132,7 +132,7 @@ class EncryptionFilterTest {
     void filter_MultipleChunks_HandlesCorrectly() {
         when(request.getPath()).thenReturn(() -> "/api/protected");
         when(securityProperties.getIgnore()).thenReturn(new SecurityProperties.IgnoreProperties());
-        
+
         DataBuffer chunk1 = new DefaultDataBufferFactory().wrap("{\"part1\":\"test\"}".getBytes(StandardCharsets.UTF_8));
         DataBuffer chunk2 = new DefaultDataBufferFactory().wrap("{\"part2\":\"test\"}".getBytes(StandardCharsets.UTF_8));
         when(request.getBody()).thenReturn(Flux.just(chunk1, chunk2));

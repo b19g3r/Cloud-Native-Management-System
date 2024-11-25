@@ -1,28 +1,29 @@
-package com.windsurf.gateway.config;
+package com.windsurf.common.security.properties;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
 @Data
-@Configuration
+@Component
 @ConfigurationProperties(prefix = "security")
 public class SecurityProperties {
-    private IgnoreProperties ignore;
-    private JwtProperties jwt;
+
+    private Jwt jwt;
+    private Ignore ignore;
 
     @Data
-    public static class IgnoreProperties {
-        private List<String> urls;
-    }
-
-    @Data
-    public static class JwtProperties {
+    public static class Jwt {
         private String secret;
         private long expiration;
         private String header;
         private String tokenPrefix;
+    }
+
+    @Data
+    public static class Ignore {
+        private List<String> urls;
     }
 }

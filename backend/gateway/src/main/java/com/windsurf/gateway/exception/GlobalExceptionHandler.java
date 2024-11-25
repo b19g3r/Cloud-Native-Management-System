@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.buffer.DataBufferFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
@@ -28,40 +29,36 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
     @Override
     public Mono<Void> handle(ServerWebExchange exchange, Throwable ex) {
         ServerHttpResponse response = exchange.getResponse();
-        if (response.isCommitted()) {
-            return Mono.error(ex);
-        }
-
-        // 设置响应的Content-Type为JSON
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
-        return response
-                .writeWith(Mono.fromSupplier(() -> {
-                    DataBufferFactory bufferFactory = response.bufferFactory();
-                    try {
-                        Map<String, Object> result = new HashMap<>();
-                        if (ex instanceof ResponseStatusException) {
-                            ResponseStatusException responseStatusException = (ResponseStatusException) ex;
-                            response.setStatusCode(responseStatusException.getStatusCode());
-                            result.put("code", responseStatusException.getStatusCode().value());
-                            result.put("message", responseStatusException.getMessage());
-                        } else {
-                            log.error("Gateway Error:", ex);
-                            result.put("code", 500);
-                            result.put("message", "Internal Server Error");
-                        }
-                        return bufferFactory.wrap(objectMapper.writeValueAsBytes(result));
-                    } catch (JsonProcessingException e) {
-                        log.error("Error writing response", e);
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("code", 500);
-                        result.put("message", "Internal Server Error");
-                        try {
-                            return bufferFactory.wrap(objectMapper.writeValueAsBytes(result));
-                        } catch (JsonProcessingException ex2) {
-                            return bufferFactory.wrap(new byte[0]);
-                        }
-                    }
-                }));
+        if (ex instanceof ResponseStatusException responseStatusException) {
+            response.setStatusCode(responseStatusException.getStatus());
+            return response.writeWith(Mono.fromSupplier(() -> {
+                DataBufferFactory bufferFactory = response.bufferFactory();
+                try {
+                    Map<String, Object> result = new HashMap<>();
+                    result.put("code", responseStatusException.getStatus().value());
+                    result.put("message", responseStatusException.getReason());
+                    return bufferFactory.wrap(objectMapper.writeValueAsBytes(result));
+                } catch (JsonProcessingException e) {
+                    log.error("Error writing response", e);
+                    return bufferFactory.wrap(new byte[0]);
+                }
+            }));
+        }
+
+        response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+        return response.writeWith(Mono.fromSupplier(() -> {
+            DataBufferFactory bufferFactory = response.bufferFactory();
+            try {
+                Map<String, Object> result = new HashMap<>();
+                result.put("code", HttpStatus.INTERNAL_SERVER_ERROR.value());
+                result.put("message", ex.getMessage());
+                return bufferFactory.wrap(objectMapper.writeValueAsBytes(result));
+            } catch (JsonProcessingException e) {
+                log.error("Error writing response", e);
+                return bufferFactory.wrap(new byte[0]);
+            }
+        }));
     }
 }

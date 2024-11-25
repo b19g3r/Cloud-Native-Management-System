@@ -48,7 +48,7 @@ class JwtAuthenticationFilterTest {
     @BeforeEach
     void setUp() {
         when(securityProperties.getJwt()).thenReturn(jwtProperties);
-        when(jwtProperties.getPrefix()).thenReturn(BEARER_PREFIX);
+        when(jwtProperties.getTokenPrefix()).thenReturn(BEARER_PREFIX);
         when(jwtProperties.getHeader()).thenReturn(HttpHeaders.AUTHORIZATION);
         when(exchange.getRequest()).thenReturn(request);
         when(exchange.getResponse()).thenReturn(response);

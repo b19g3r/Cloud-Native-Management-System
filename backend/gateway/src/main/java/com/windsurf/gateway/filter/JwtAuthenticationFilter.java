@@ -73,7 +73,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isIgnorePath(String path) {
-        List<String> ignoreUrls = securityProperties.getUrls();
+        List<String> ignoreUrls = securityProperties.getIgnore().getUrls();
         if (ignoreUrls == null || ignoreUrls.isEmpty()) {
             return false;
         }
