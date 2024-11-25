@@ -11,8 +11,8 @@
 
     <modules>
         <module>common</module>
-        <!-- <module>gateway</module> -->
-        <!-- <module>auth</module> -->
+        <module>gateway</module>
+        <module>auth</module>
         <!-- <module>system</module> -->
         <!-- <module>monitor</module> -->
     </modules>
