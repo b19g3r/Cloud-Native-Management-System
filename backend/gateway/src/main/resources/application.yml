@@ -20,12 +20,30 @@ spring:
             - Path=/auth/**
           filters:
             - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 100
+                redis-rate-limiter.burstCapacity: 200
+                key-resolver: "#{@userKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: auth-service
+                fallbackUri: forward:/fallback
         - id: system-service
           uri: lb://windsurf-system
           predicates:
             - Path=/system/**
           filters:
             - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                redis-rate-limiter.replenishRate: 50
+                redis-rate-limiter.burstCapacity: 100
+                key-resolver: "#{@userKeyResolver}"
+            - name: CircuitBreaker
+              args:
+                name: system-service
+                fallbackUri: forward:/fallback
 
   redis:
     host: ${REDIS_HOST:localhost}
@@ -41,6 +59,7 @@ security:
       - /auth/register
       - /*/v3/api-docs
       - /csrf
+      - /fallback
     
 jwt:
   secret: ${JWT_SECRET:your-secret-key}
@@ -48,9 +67,61 @@ jwt:
   header: Authorization
   prefix: Bearer 
 
+# 熔断器配置
+resilience4j.circuitbreaker:
+  configs:
+    default:
+      slidingWindowSize: 10
+      failureRateThreshold: 50
+      waitDurationInOpenState: 10000
+      permittedNumberOfCallsInHalfOpenState: 5
+  instances:
+    auth-service:
+      baseConfig: default
+    system-service:
+      baseConfig: default
+
+# 限流器配置
+resilience4j.ratelimiter:
+  configs:
+    default:
+      limitForPeriod: 100
+      limitRefreshPeriod: 1s
+      timeoutDuration: 0
+  instances:
+    auth-service:
+      baseConfig: default
+    system-service:
+      baseConfig: default
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      sla:
+        http.server.requests: 10ms, 50ms, 100ms, 200ms, 500ms
+
 # 开发环境特定配置
 logging:
   level:
     root: INFO
     com.windsurf: DEBUG
     org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway.filter.ratelimit: DEBUG
+    io.github.resilience4j: DEBUG
