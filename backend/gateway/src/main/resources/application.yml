@@ -1,0 +1,56 @@
+server:
+  port: 9000
+
+spring:
+  application:
+    name: windsurf-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_HOST:localhost}:${NACOS_PORT:8848}
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: auth-service
+          uri: lb://windsurf-auth
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=1
+        - id: system-service
+          uri: lb://windsurf-system
+          predicates:
+            - Path=/system/**
+          filters:
+            - StripPrefix=1
+
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 0
+
+security:
+  ignore:
+    urls:
+      - /auth/login
+      - /auth/captcha
+      - /auth/register
+      - /*/v3/api-docs
+      - /csrf
+    
+jwt:
+  secret: ${JWT_SECRET:your-secret-key}
+  expiration: 86400  # 24小时
+  header: Authorization
+  prefix: Bearer 
+
+# 开发环境特定配置
+logging:
+  level:
+    root: INFO
+    com.windsurf: DEBUG
+    org.springframework.cloud.gateway: DEBUG
