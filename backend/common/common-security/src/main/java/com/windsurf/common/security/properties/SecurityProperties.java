@@ -10,20 +10,20 @@ import java.util.List;
 @Component
 @ConfigurationProperties(prefix = "security")
 public class SecurityProperties {
-
-    private Jwt jwt;
-    private Ignore ignore;
+    
+    private JwtProperties jwt = new JwtProperties();
+    private IgnoreProperties ignore = new IgnoreProperties();
 
     @Data
-    public static class Jwt {
-        private String secret;
-        private long expiration;
-        private String header;
-        private String tokenPrefix;
+    public static class JwtProperties {
+        private String secret = "your-secret-key";
+        private long expiration = 86400; // 24小时
+        private String tokenPrefix = "Bearer ";
+        private String header = "Authorization";
     }
 
     @Data
-    public static class Ignore {
+    public static class IgnoreProperties {
         private List<String> urls;
     }
 }
