@@ -18,8 +18,8 @@ public class MetricsConfig {
                     String uri = id.getTag("uri");
                     return uri != null && (
                             uri.startsWith("/actuator") ||
-                            uri.startsWith("/metrics") ||
-                            uri.contains("favicon"));
+                                    uri.startsWith("/metrics") ||
+                                    uri.contains("favicon"));
                 }));
     }
 }

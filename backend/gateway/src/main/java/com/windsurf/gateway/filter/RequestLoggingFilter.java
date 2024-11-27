@@ -22,7 +22,7 @@ public class RequestLoggingFilter implements GlobalFilter, Ordered {
         String path = request.getURI().getPath();
         String method = request.getMethod().name();
         String remoteAddress = request.getRemoteAddress().getAddress().getHostAddress();
-        
+
         // 记录请求头
         List<String> headerInfo = new ArrayList<>();
         request.getHeaders().forEach((name, values) -> {
@@ -35,7 +35,7 @@ public class RequestLoggingFilter implements GlobalFilter, Ordered {
         long startTime = System.currentTimeMillis();
         exchange.getAttributes().put("startTime", startTime);
 
-        log.info("Incoming Request - Method: {}, Path: {}, Remote: {}, Headers: {}", 
+        log.info("Incoming Request - Method: {}, Path: {}, Remote: {}, Headers: {}",
                 method, path, remoteAddress, headerInfo);
 
         return chain.filter(exchange).then(Mono.fromRunnable(() -> {
@@ -57,10 +57,10 @@ public class RequestLoggingFilter implements GlobalFilter, Ordered {
     private boolean shouldLogHeader(String headerName) {
         // 排除一些敏感或不必要的请求头
         List<String> excludeHeaders = List.of(
-            "cookie", 
-            "authorization", 
-            "proxy-authorization", 
-            "x-xsrf-token"
+                "cookie",
+                "authorization",
+                "proxy-authorization",
+                "x-xsrf-token"
         );
         return !excludeHeaders.contains(headerName.toLowerCase());
     }

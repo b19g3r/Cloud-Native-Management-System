@@ -23,7 +23,7 @@ public class GrayReleaseFilter implements GlobalFilter, Ordered {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
-        
+
         // 检查是否有灰度发布标记
         List<String> grayVersion = request.getHeaders().get(GRAY_VERSION);
         List<String> grayWeight = request.getHeaders().get(GRAY_WEIGHT);
@@ -37,7 +37,7 @@ public class GrayReleaseFilter implements GlobalFilter, Ordered {
                             .header("X-Gray-Version", grayVersion.get(0))
                             .build();
                     exchange = exchange.mutate().request(newRequest).build();
-                    
+
                     log.debug("Request routed to gray version: {}", grayVersion.get(0));
                 }
             } catch (NumberFormatException e) {
