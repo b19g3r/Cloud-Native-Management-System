@@ -124,4 +124,17 @@ public class JwtUtils {
             throw e;
         }
     }
+
+    /**
+     * Extract JWT token from Authorization header
+     * @param bearerToken Authorization header value
+     * @return JWT token without Bearer prefix
+     * @throws IllegalArgumentException if header format is invalid
+     */
+    public String extractTokenFromHeader(String bearerToken) {
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7);
+        }
+        throw new IllegalArgumentException("Invalid authorization header format");
+    }
 }

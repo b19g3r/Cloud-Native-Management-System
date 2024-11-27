@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 @Service
@@ -31,6 +32,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final RedisService redisService;
     private final SecurityProperties securityProperties;
+    private final JwtUtils jwtUtils;
 
     @Transactional
     public String register(RegisterRequest request) {
@@ -61,7 +63,7 @@ public class AuthService {
         userMapper.insert(user);
 
         // Generate token
-        return JwtUtils.generateToken(user);
+        return jwtUtils.generateToken(user);
     }
 
     public String login(LoginRequest request) {
@@ -86,71 +88,47 @@ public class AuthService {
         userMapper.updateById(user);
 
         // Generate token
-        return JwtUtils.generateToken(user);
+        return jwtUtils.generateToken(user);
     }
 
     public String refreshToken(String token) {
-        if (token == null || !token.startsWith(securityProperties.getJwt().getTokenPrefix())) {
-            throw new BusinessException("Invalid token");
-        }
-
-        String jwt = token.substring(securityProperties.getJwt().getTokenPrefix().length());
-        
         // Check if token is blacklisted
-        if (isTokenBlacklisted(jwt)) {
+        if (isTokenBlacklisted(token)) {
             throw new BusinessException("Token has been revoked");
         }
 
-        // Validate token
-        Claims claims = JwtUtils.getClaimsFromToken(jwt);
-        if (claims == null) {
-            throw new BusinessException("Invalid token");
+        try {
+            Claims claims = jwtUtils.getClaimsFromToken(token);
+            String username = claims.getSubject();
+            
+            User user = userMapper.findByUsername(username);
+            if (user == null || user.getStatus() != UserStatus.ACTIVE) {
+                throw new BusinessException("User not found or inactive");
+            }
+
+            return jwtUtils.generateToken(user);
+        } catch (Exception e) {
+            throw new BusinessException("Failed to refresh token: " + e.getMessage());
         }
-
-        // Check if token needs refresh (e.g., if it expires in less than 30 minutes)
-        Date expirationDate = claims.getExpiration();
-        if (expirationDate.getTime() - System.currentTimeMillis() > 30 * 60 * 1000) {
-            return token; // Token is still valid for more than 30 minutes
-        }
-
-        // Get user and generate new token
-        String username = claims.getSubject();
-        User user = userMapper.findByUsername(username);
-        if (user == null) {
-            throw new BusinessException("User not found");
-        }
-
-        // Blacklist old token
-        blacklistToken(jwt, expirationDate);
-
-        // Generate new token
-        return JwtUtils.generateToken(user);
     }
 
     public void logout(String token) {
-        if (token == null || !token.startsWith(securityProperties.getJwt().getTokenPrefix())) {
-            throw new BusinessException("Invalid token");
-        }
-
-        String jwt = token.substring(securityProperties.getJwt().getTokenPrefix().length());
-        Claims claims = JwtUtils.getClaimsFromToken(jwt);
-        if (claims != null) {
-            blacklistToken(jwt, claims.getExpiration());
-        }
-    }
-
-    private boolean isPasswordValid(String password) {
-        return PASSWORD_PATTERN.matcher(password).matches();
-    }
-
-    private void blacklistToken(String token, Date expirationDate) {
-        long ttl = expirationDate.getTime() - System.currentTimeMillis();
-        if (ttl > 0) {
-            redisService.setEx(TOKEN_BLACKLIST_PREFIX + token, "1", ttl);
+        // Add token to blacklist
+        try {
+            Claims claims = jwtUtils.getClaimsFromToken(token);
+            Date expiration = claims.getExpiration();
+            long ttl = Math.max(0, expiration.getTime() - System.currentTimeMillis());
+            redisService.setCacheObject(TOKEN_BLACKLIST_PREFIX + token, "1", ttl, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new BusinessException("Failed to logout: " + e.getMessage());
         }
     }
 
     private boolean isTokenBlacklisted(String token) {
         return redisService.hasKey(TOKEN_BLACKLIST_PREFIX + token);
+    }
+
+    private boolean isPasswordValid(String password) {
+        return PASSWORD_PATTERN.matcher(password).matches();
     }
 }
